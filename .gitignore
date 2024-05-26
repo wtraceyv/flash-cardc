@@ -1,3 +1,11 @@
+# db files generated
+*.db
+
+# we generate all build stuff
+build/*
+
+# ----------- pre gen ignores ---------#
+
 # Prerequisites
 *.d
 
