@@ -11,6 +11,7 @@ cd build
 cmake ../        # generate build files
 cmake --build    # compile/link
 ./flash-cardc    # run program
+```
 
 > [!NOTE]
 > If you want to build from vscode like I like to, it works best if your build/ folder is empty.
