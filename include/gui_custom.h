@@ -23,10 +23,29 @@ namespace gui_custom
 
 	/** funciones */
 
+	Element BottomLearningHelpText(std::string deck_name)
+	{
+		return vbox({
+			vbox({
+				filler(),
+				text("You are now practicing from the deck, \'" + deck_name + "'. Your progress may be indicated by a gauge at the bottom of the page."),
+				text(""),
+				filler(),
+			}),
+			vbox({
+				filler(),
+				text("Press ENTER to show the answer or advance to the next flash card."),
+				text("Press q to quit the program."),
+				text("Press backspace to return to options page."),
+				filler(),
+			}),
+		});
+	}
+
 	Element BottomHelpText()
 	{
 		return vbox({
-			GTRBanner(),
+			// GTRBanner(),
 			hbox({
 				filler(),
 				text("Press Enter to choose an option."),

@@ -9,18 +9,13 @@
 
 #include "gui_custom.h"
 #include "db.h"
+#include "learn_engine.h"
 
 using namespace ftxui;
 
 namespace pages
 {
-	struct StudyOptions {
-		std::string deck_name = "";
-		std::string category = "";
-		bool random_order = false;
-		bool answer_first = false;
-		bool loop_forever = false;
-	};
+	
 
 	/* forward declares */
 
@@ -34,7 +29,7 @@ namespace pages
 
 	bool quit_request = false;
 	std::function<void()> next_page = HomePage;
-	StudyOptions current_study_options;
+	learn_engine::StudyOptions current_study_options;
 
 	// main loop for pages
 	void run()
@@ -221,7 +216,7 @@ namespace pages
 	}
 
 	/**
-	 * Set options about studying the set with a StudyOptions struct.
+	 * Set options about studying the set with a learn_engine::StudyOptions struct.
 	*/
 	void PreLearnPage()
 	{
@@ -256,7 +251,7 @@ namespace pages
 			"Start practicing",
 			[&] {
 				// TODO: change to LearnPage when implemented
-				next_page = HomePage;
+				next_page = LearnPage;
 				screen.Exit();
 			},
 			ButtonOption::Animated(Color::Aquamarine1)
@@ -322,12 +317,7 @@ namespace pages
 		});
 
 		doc |= CatchEvent([&](Event event) {
-			if (event == Event::Character('\n')) {
-				// TODO: uncomment when implemented
-				// next_page = LearnPage;
-				// screen.Exit();
-				// return true;
-			} else if (event == Event::Character('q')) {
+			if (event == Event::Character('q')) {
 				next_page = QuitPage;
 				screen.Exit();
 				return true;
@@ -343,8 +333,95 @@ namespace pages
 		screen.Loop(doc);
 	}
 
-	// TODO: use gauge component to indicate how close to completion (unless loop_forever)
-	void LearnPage();
+	void LearnPage()
+	{
+		auto screen = ScreenInteractive::Fullscreen();
+
+		auto questions = learn_engine::GenLearningDeck(current_study_options);
+		auto cur_card = questions[0];
+		int cur_q_index = 0;
+		int num_answered = 0;
+		float progress = 0.0f;
+		bool show_answer = false;
+
+		auto all_components = Container::Vertical({});
+
+		auto doc = Renderer(all_components, [&] {
+			std::string answer_text = (show_answer) ? cur_card.answer : "Press ENTER to show answer!";
+			progress = (float)num_answered / questions.size();
+
+			auto question_window = window(
+				text("Question"),
+				hbox({
+					filler(),
+					text(cur_card.question),
+					filler(),
+				})
+			);
+
+			auto answer_window = window(
+				text("Answer"),
+				hbox({
+					filler(),
+					text(answer_text),
+					filler(),
+				})
+			);
+
+			return vbox({
+				hbox({ 		// TODO: question/answer panels
+					question_window,
+					separator(),
+					answer_window | size(WIDTH, GREATER_THAN, 30),
+				}) | size(HEIGHT, EQUAL, 40),
+				gauge(progress),
+				separator(),
+				gui_custom::BottomLearningHelpText(current_study_options.deck_name),
+				separator(),
+			}) | border;
+		});
+
+		doc |= CatchEvent([&](Event event) {
+			if (event == Event::Character('\n')) {
+				if (!show_answer) { 			// show the hidden answer
+					show_answer = true;
+					num_answered++;
+					return true;
+				} else { 									// answer is already showing
+					if (cur_q_index < questions.size()-1) { 	// more questions are left, show next one
+						cur_q_index++;
+						cur_card = questions[cur_q_index];
+					} else {								// no questions left, either regen or exit
+						if (current_study_options.loop_forever) {
+							// deck exhausted, loop back and continue
+							num_answered = 0;
+							cur_q_index = 0;
+							cur_card = questions[cur_q_index];
+						} else {
+							// exit, deck exhausted
+							next_page = PreLearnPage;
+							screen.Exit();
+							return true;
+						}
+					}
+					show_answer = false;
+					return true;
+				}
+			} else if (event == Event::Character('q')) {
+				next_page = QuitPage;
+				screen.Exit();
+				return true;
+			} else if (event == Event::Backspace) {
+				next_page = PreLearnPage;
+				screen.Exit();
+				return true;
+			}
+
+			return false;
+		});
+
+		screen.Loop(doc);
+	}
 
 	// TODO: get some inputs in here or something; chart out what you can change and whatnot
 	void SettingsPage()

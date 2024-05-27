@@ -29,6 +29,7 @@ add_executable(flash-cardc
   include/pages.h
   include/gui_custom.h
   include/db.h
+  include/learn_engine.h
 )
 
 target_include_directories(flash-cardc PRIVATE include)
