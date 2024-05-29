@@ -13,13 +13,13 @@ namespace learn_engine {
 		bool random_order = false;
 		bool answer_first = false;
 		bool loop_forever = false;
-	};
+  };
 
 	/**
 	 * Using the supplied study options, generate an acceptable set of 
 	 * flash cards to be studied
 	*/
-	std::vector<db::FlashCard> GenLearningDeck(StudyOptions &options)
+	inline std::vector<db::FlashCard> GenLearningDeck(StudyOptions &options)
 	{
 		std::vector<db::FlashCard> result;
 

@@ -2,8 +2,6 @@
 
 #include <string>
 
-#include "ftxui/component/component.hpp"	  // for Button, Horizontal, Renderer
-#include "ftxui/component/component_base.hpp" // for ComponentBase
 #include "ftxui/dom/elements.hpp"			  // for separator, gauge, text, Element, operator|, vbox, border
 
 using namespace ftxui;
@@ -23,7 +21,7 @@ namespace gui_custom
 
 	/** funciones */
 
-	Element BottomLearningHelpText(std::string deck_name)
+	inline Element BottomLearningHelpText(std::string deck_name)
 	{
 		return vbox({
 			vbox({
@@ -42,7 +40,7 @@ namespace gui_custom
 		});
 	}
 
-	Element BottomHelpText()
+	inline Element BottomHelpText()
 	{
 		return vbox({
 			// GTRBanner(),
@@ -64,7 +62,7 @@ namespace gui_custom
 		});
 	}
 
-	Element GTRBanner()
+	inline Element GTRBanner()
 	{
 		return vbox({
 			text("                                             ⣀⣀⣀⣀⣠⣤⣤⣤⠶⠶⠶⢦⣤⣤⣤⣄⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⣀⣤⠤⠤⠤⢤⣤⣤⣤⣤⣄⣀⣀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"),

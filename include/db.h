@@ -36,7 +36,7 @@ namespace db
 		long next_study_rec = 0;
 	};
 
-	void CreateDeckTable()
+	inline void CreateDeckTable()
 	{
 		sqlite3* db;
 		char* err_message;
@@ -69,7 +69,7 @@ namespace db
 	/**
 	 * Insert a new flash card. If the deck_name is new, it trivially "creates" that deck in the background.
 	*/
-	void InsertCard(FlashCard new_card)
+	inline void InsertCard(FlashCard new_card)
 	{
 		sqlite3* db;
 		char* err_message;
@@ -99,7 +99,7 @@ namespace db
 	 * https://stackoverflow.com/questions/31146713/sqlite3-exec-callback-function-clarification/31168999#31168999
 	 * https://stackoverflow.com/questions/61794729/how-does-prepared-statements-in-sqlite-c-work
 	*/
-	std::vector<std::string> GetDecks()
+	inline std::vector<std::string> GetDecks()
 	{
 		std::vector<std::string> result;
 		sqlite3* db;
@@ -135,7 +135,7 @@ namespace db
 	/**
 	 * Get a list of distinct categories you could filter a deck's cards by.
 	*/
-	std::vector<std::string> GetCategories(std::string deck_name)
+	inline std::vector<std::string> GetCategories(std::string deck_name)
 	{
 		std::vector<std::string> result;
 		sqlite3* db;
@@ -174,7 +174,7 @@ namespace db
 	/**
 	 * Get all flash cards in a named deck, filtered by category if supplied.
 	*/
-	std::vector<FlashCard> GetCards(std::string deck_name, std::string category = "")
+	inline std::vector<FlashCard> GetCards(std::string deck_name, std::string category = "")
 	{
 		std::vector<FlashCard> result;
 		sqlite3* db;
@@ -234,7 +234,7 @@ namespace db
 	/**
 	 * Modify card with given id to match the given values of the other attibutes.
 	*/
-	void EditCard(FlashCard edited_card)
+	inline void EditCard(FlashCard edited_card)
 	{
 		// TODO: fill
 	}

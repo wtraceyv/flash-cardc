@@ -15,8 +15,6 @@ using namespace ftxui;
 
 namespace pages
 {
-	
-
 	/* forward declares */
 
 	void HomePage();
@@ -27,12 +25,12 @@ namespace pages
 
 	/* variables */
 
-	bool quit_request = false;
-	std::function<void()> next_page = HomePage;
-	learn_engine::StudyOptions current_study_options;
+	inline bool quit_request = false;
+	inline std::function<void()> next_page = HomePage;
+	inline learn_engine::StudyOptions current_study_options;
 
 	// main loop for pages
-	void run()
+	inline void run()
 	{
 		while (!quit_request)
 		{
@@ -48,7 +46,7 @@ namespace pages
 	 * next page, it should quit and dump like you want
 	 * no matter what.
 	*/
-	void QuitPage()
+	inline void QuitPage()
 	{
 		quit_request = true;
 	}
@@ -61,7 +59,7 @@ namespace pages
 	 * - Import
 	 * - Export
 	*/
-	void HomePage()
+	inline void HomePage()
 	{
 		auto screen = ScreenInteractive::Fullscreen();
 
@@ -115,7 +113,7 @@ namespace pages
 		
 			return vbox({
 				vbox({
-					text("Welcome to Wally's flash cards") | center,
+					text("Welcome to Wally's FUCKING flash cards") | center,
 					separator(),
 					main_menu->Render(),
 					separator(),
@@ -148,7 +146,7 @@ namespace pages
 		screen.Loop(doc);
 	}
 
-	void BrowseDecksPage()
+	inline void BrowseDecksPage()
 	{
 		auto screen = ScreenInteractive::Fullscreen();
 
@@ -218,7 +216,7 @@ namespace pages
 	/**
 	 * Set options about studying the set with a learn_engine::StudyOptions struct.
 	*/
-	void PreLearnPage()
+	inline void PreLearnPage()
 	{
 		auto screen = ScreenInteractive::Fullscreen();
 
@@ -333,7 +331,7 @@ namespace pages
 		screen.Loop(doc);
 	}
 
-	void LearnPage()
+	inline void LearnPage()
 	{
 		auto screen = ScreenInteractive::Fullscreen();
 
@@ -424,7 +422,7 @@ namespace pages
 	}
 
 	// TODO: get some inputs in here or something; chart out what you can change and whatnot
-	void SettingsPage()
+	inline void SettingsPage()
 	{
 		auto screen = ScreenInteractive::Fullscreen();
 

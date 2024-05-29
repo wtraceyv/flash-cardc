@@ -3,6 +3,7 @@
 
 # we generate all build stuff
 build/*
+.cache/*
 
 # ----------- pre gen ignores ---------#
 
