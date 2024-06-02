@@ -19,6 +19,7 @@ namespace pages
 
 	void HomePage();
 	void BrowseDecksPage();
+    void InsertCards();
 	void SettingsPage();
 	void PreLearnPage();
 	void LearnPage();
@@ -65,7 +66,7 @@ namespace pages
 
 		const std::vector<std::string> menu_choices = {
 			"Browse Decks",
-			"Start New Deck",
+			"New Cards or Deck",
 			"Options",
 			"Import",
 			"Export",
@@ -92,7 +93,7 @@ namespace pages
 					message = "Time to learn!";
 					break;
 				case 1:
-					next_page = QuitPage;
+					next_page = InsertCards;
 					message = "New set of cards ahead.";
 					break;
 				case 2:
@@ -212,6 +213,137 @@ namespace pages
 
 		screen.Loop(doc);
 	}
+
+	/**
+	 * Insert new flash cards as part of a new or existing deck.
+	*/
+    inline void InsertCards()
+    {
+        auto screen = ScreenInteractive::Fullscreen();
+
+		std::string deck_name_content = "";
+        std::string question_content = "";
+        std::string answer_content = "";
+        std::string category_content = "";
+
+		// allow to auto fill in deck name with an existing deck to add to it
+        std::vector<std::string> existing_decks = db::GetDecks();
+		Elements decks_spaced;
+		for (auto d : existing_decks)
+			decks_spaced.push_back(text("- " + d));
+		auto deck_display = window(
+			text("Existing decks"),
+			vbox({
+				decks_spaced
+			})
+		);
+
+		// allow to auto fill in existing category in selected deck
+        std::vector<std::string> relevant_categories = {};
+		std::string categories_text = "";
+		Elements categories_spaced;
+		auto categories_refresh = [&] {
+			relevant_categories = db::GetCategories(deck_name_content);
+			categories_spaced = {};
+			for (auto c : relevant_categories)
+				categories_spaced.push_back(text("- " + c));
+		};
+		categories_refresh();
+
+		Component deck_name_input = Input(&deck_name_content, "Deck name");
+        Component question_input = Input(&question_content, "Question");
+        Component answer_input = Input(&answer_content, "Answer");
+        Component category_input = Input(&category_content, "Category");
+
+        // inputs: question, answer, category (optional)
+		db::FlashCard to_add;
+
+		std::string message = "";
+		auto submit_button = Button(
+			"Insert card",
+			[&] {
+				// abort if required fields not filled
+				if (to_add.deck_name.empty() || to_add.question.empty() || to_add.answer.empty()) {
+					message = "Deck name, question, and answer fields must be filled to insert card!";
+					return;
+				}
+
+				// TODO: real error handling
+				db::InsertCard(to_add);
+				message = "New card inserted in deck '" + to_add.deck_name + "'";
+
+				// clear necessarily new next info
+				question_content = "", answer_content = "";
+			},
+			ButtonOption::Animated(Color::Aquamarine1)
+		);
+
+		auto leave_button = Button(
+			"Return home",
+			[&] {
+				next_page = HomePage;
+				screen.Exit();
+			},
+			ButtonOption::Animated(Color::MediumOrchid1)
+		);
+
+        // on submit, clear only question, answer, category, NOT deck selection
+        auto all_components = Container::Vertical({
+			deck_name_input,
+			question_input,
+			answer_input,
+			category_input,
+			submit_button,
+			leave_button
+		});
+        
+        auto doc = Renderer(all_components, [&] {
+			categories_refresh();
+
+			// set authoritative values in case we are going to insert next
+			to_add.deck_name = deck_name_content;
+			to_add.question = question_content;
+			to_add.answer = answer_content;
+			to_add.category = category_content;
+
+            return vbox({
+				vbox({
+					text("Supply info for a new flash card."),
+					paragraphAlignLeft("If you want to create a new deck, enter that for deck name and the deck will be created."),
+					text(""),
+					text(""),
+					deck_display,
+					text(""),
+					window(
+						text("Relevant categories"),
+						vbox({
+							categories_spaced
+						})
+					),
+					text(""),
+					deck_name_input->Render() | size(WIDTH, EQUAL, 40),
+					question_input->Render() | size(WIDTH, GREATER_THAN, 40),
+					answer_input->Render() | size(WIDTH, GREATER_THAN, 40),
+					category_input->Render() | size(WIDTH, EQUAL, 40),
+					text(""),
+					submit_button->Render() | size(WIDTH, LESS_THAN, 18),
+					text(""),
+					leave_button->Render() | size(WIDTH, LESS_THAN, 18),
+					text(""),
+					text(message),
+					text(""),
+					text("debug"),
+					text("deck_name_content: " + deck_name_content),
+					text("question_content: " + question_content),
+					text("answer_content: " + answer_content),
+					text("category_content: " + category_content),
+					text("category text: " + categories_text)
+				}),
+            });
+        });
+
+		screen.Loop(doc);
+    }
 
 	/**
 	 * Set options about studying the set with a learn_engine::StudyOptions struct.
@@ -352,7 +484,7 @@ namespace pages
 				text("Question"),
 				hbox({
 					filler(),
-					text(cur_card.question),
+					paragraphAlignLeft(cur_card.question) | size(ftxui::WIDTH, ftxui::EQUAL, 40),
 					filler(),
 				})
 			);
@@ -361,7 +493,7 @@ namespace pages
 				text("Answer"),
 				hbox({
 					filler(),
-					text(answer_text),
+					paragraphAlignLeft(answer_text) | size(ftxui::WIDTH, ftxui::EQUAL, 40),
 					filler(),
 				})
 			);

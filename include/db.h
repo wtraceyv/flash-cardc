@@ -137,7 +137,11 @@ namespace db
 	*/
 	inline std::vector<std::string> GetCategories(std::string deck_name)
 	{
-		std::vector<std::string> result;
+		std::vector<std::string> result = {};
+
+        if (deck_name.empty())
+            return result;
+
 		sqlite3* db;
 		sqlite3_stmt* statement;
 		constexpr std::string_view sql_raw = R"(
@@ -190,13 +194,15 @@ namespace db
 				last_answered,
 				next_study_rec
 			FROM flash_cards
-			WHERE deck_name = '{}';
+			WHERE deck_name = '{}'
 		)";
 		std::string sql = std::format(sql_raw, deck_name);
 
 		// accomodate if a category was also specified
 		if (!category.empty()) {
-			sql += " AND category = '" + category + "'";
+			sql += " AND category = '" + category + "';";
+		} else {
+			sql += ";";
 		}
 
 		sqlite3_open(db_filepath, &db);
