@@ -250,6 +250,25 @@ namespace pages
 		};
 		categories_refresh();
 
+		std::vector<db::FlashCard> relevant_flashcards = {};
+		Elements flashcards_spaced;
+		auto flashcards_refresh = [&] {
+			relevant_flashcards = db::GetCards(deck_name_content, category_content);
+			flashcards_spaced = {};
+			if (relevant_flashcards.size() == 0) {
+				flashcards_spaced.push_back(text("No flash cards found with this deck name and category."));
+			} else {
+				for (auto f : relevant_flashcards) {
+					flashcards_spaced.push_back(
+						vbox({
+							paragraphAlignLeft("Q: " + f.question + ", A: " + f.answer),
+							// paragraphAlignLeft("A: " + f.answer),
+						})
+					);
+				}
+			}
+		};
+
 		Component deck_name_input = Input(&deck_name_content, "Deck name");
         Component question_input = Input(&question_content, "Question");
         Component answer_input = Input(&answer_content, "Answer");
@@ -299,6 +318,7 @@ namespace pages
         
         auto doc = Renderer(all_components, [&] {
 			categories_refresh();
+			flashcards_refresh();
 
 			// set authoritative values in case we are going to insert next
 			to_add.deck_name = deck_name_content;
@@ -312,32 +332,39 @@ namespace pages
 					paragraphAlignLeft("If you want to create a new deck, enter that for deck name and the deck will be created."),
 					text(""),
 					text(""),
-					deck_display,
-					text(""),
-					window(
-						text("Relevant categories"),
+					hbox({
 						vbox({
-							categories_spaced
-						})
-					),
-					text(""),
-					deck_name_input->Render() | size(WIDTH, EQUAL, 40),
-					question_input->Render() | size(WIDTH, GREATER_THAN, 40),
-					answer_input->Render() | size(WIDTH, GREATER_THAN, 40),
-					category_input->Render() | size(WIDTH, EQUAL, 40),
-					text(""),
-					submit_button->Render() | size(WIDTH, LESS_THAN, 18),
-					text(""),
-					leave_button->Render() | size(WIDTH, LESS_THAN, 18),
-					text(""),
-					text(message),
-					text(""),
-					text("debug"),
-					text("deck_name_content: " + deck_name_content),
-					text("question_content: " + question_content),
-					text("answer_content: " + answer_content),
-					text("category_content: " + category_content),
-					text("category text: " + categories_text)
+							deck_name_input->Render() | size(WIDTH, EQUAL, 40),
+							question_input->Render() | size(WIDTH, GREATER_THAN, 40),
+							answer_input->Render() | size(WIDTH, GREATER_THAN, 40),
+							category_input->Render() | size(WIDTH, EQUAL, 40),
+							text(""),
+							submit_button->Render() | size(WIDTH, LESS_THAN, 18),
+							text(""),
+							leave_button->Render() | size(WIDTH, LESS_THAN, 18),
+							text(""),
+							text(message),
+							text(""),
+						}) | flex,
+						// filler(),
+						vbox({
+							deck_display,
+							text(""),
+							window(
+								text("Relevant categories"),
+								vbox({
+									categories_spaced
+								})
+							),
+							text(""),
+							window(
+								text("Flash Card preview"),
+								vbox({
+									flashcards_spaced
+								}) | vscroll_indicator | frame
+							)
+						}) | flex,
+					}),
 				}),
             });
         });
