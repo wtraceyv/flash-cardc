@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <algorithm>
 
 #include "ftxui/component/component.hpp"	  // for Button, Horizontal, Renderer
 #include "ftxui/component/component_base.hpp" // for ComponentBase
@@ -68,8 +69,6 @@ namespace pages
 			"Browse Decks",
 			"New Cards or Deck",
 			"Options",
-			"Import",
-			"Export",
 		};
 		int selected = 0;
 		auto main_menu = Menu(
@@ -100,21 +99,13 @@ namespace pages
 					next_page = SettingsPage;
 					message = "Change settings about flash cards.";
 					break;
-				case 3:
-					next_page = QuitPage;
-					message = "Import a db of decks.";
-					break;
-				case 4:
-					next_page = QuitPage;
-					message = "Export your db of decks.";
-					break;
 				default:
 					message = "Sup.";
 			}
 		
 			return vbox({
 				vbox({
-					text("Welcome to Wally's FUCKING flash cards") | center,
+					text("Wally's flash cards") | center,
 					separator(),
 					main_menu->Render(),
 					separator(),
@@ -239,6 +230,7 @@ namespace pages
 		);
 
 		// allow to auto fill in existing category in selected deck
+		// for showing
         std::vector<std::string> relevant_categories = {};
 		std::string categories_text = "";
 		Elements categories_spaced;
@@ -252,17 +244,21 @@ namespace pages
 
 		std::vector<db::FlashCard> relevant_flashcards = {};
 		Elements flashcards_spaced;
+		const int page_size = 22;
+		int preview_start_index = 0;
+		int preview_up_to = 0;
 		auto flashcards_refresh = [&] {
 			relevant_flashcards = db::GetCards(deck_name_content, category_content);
 			flashcards_spaced = {};
 			if (relevant_flashcards.size() == 0) {
 				flashcards_spaced.push_back(text("No flash cards found with this deck name and category."));
 			} else {
-				for (auto f : relevant_flashcards) {
+				preview_up_to = (preview_up_to == 0) ? std::min(page_size, (int)relevant_flashcards.size()-1) : preview_up_to;
+				for (int i = preview_start_index; i <= preview_up_to; i++) {
+					auto f = relevant_flashcards[i];
 					flashcards_spaced.push_back(
 						vbox({
 							paragraphAlignLeft("Q: " + f.question + ", A: " + f.answer),
-							// paragraphAlignLeft("A: " + f.answer),
 						})
 					);
 				}
@@ -306,14 +302,46 @@ namespace pages
 			ButtonOption::Animated(Color::MediumOrchid1)
 		);
 
+		auto page_back_button = Button(
+			"Previous cards",
+			[&] {
+				if (preview_start_index - page_size < 0) {
+					preview_start_index = 0;
+					preview_up_to = std::min(page_size, (int)relevant_flashcards.size()-1);
+				} else {
+					preview_start_index -= page_size;
+					preview_up_to = preview_start_index + page_size;
+				}
+				flashcards_refresh();
+			},
+			ButtonOption::Animated(Color::MediumOrchid1)
+		);
+
+		auto page_forward_button = Button(
+			"More cards",
+			[&] {
+				if (preview_up_to % page_size != 0) return;
+				else {
+					preview_start_index = preview_up_to;
+					preview_up_to = std::min(preview_start_index + page_size, (int)relevant_flashcards.size()-1);
+				}
+				flashcards_refresh();
+			},
+			ButtonOption::Animated(Color::MediumOrchid1)
+		);
+
         // on submit, clear only question, answer, category, NOT deck selection
-        auto all_components = Container::Vertical({
-			deck_name_input,
-			question_input,
-			answer_input,
-			category_input,
-			submit_button,
-			leave_button
+        auto all_components = Container::Horizontal({
+			Container::Vertical({
+				deck_name_input,
+				question_input,
+				answer_input,
+				category_input,
+				submit_button,
+				leave_button
+			}),
+			page_back_button,
+			page_forward_button
 		});
         
         auto doc = Renderer(all_components, [&] {
@@ -335,8 +363,8 @@ namespace pages
 					hbox({
 						vbox({
 							deck_name_input->Render() | size(WIDTH, EQUAL, 40),
-							question_input->Render() | size(WIDTH, GREATER_THAN, 40),
-							answer_input->Render() | size(WIDTH, GREATER_THAN, 40),
+							question_input->Render() | size(WIDTH, LESS_THAN, 40),
+							answer_input->Render() | size(WIDTH, LESS_THAN, 40),
 							category_input->Render() | size(WIDTH, EQUAL, 40),
 							text(""),
 							submit_button->Render() | size(WIDTH, LESS_THAN, 18),
@@ -361,8 +389,13 @@ namespace pages
 								text("Flash Card preview"),
 								vbox({
 									flashcards_spaced
-								}) | vscroll_indicator | frame
-							)
+								})
+							) | size(HEIGHT, EQUAL, 30),
+							hbox({
+								page_back_button->Render(),
+								filler(),
+								page_forward_button->Render(),
+							}),
 						}) | flex,
 					}),
 				}),
@@ -438,7 +471,7 @@ namespace pages
 			 * In the db call, it won't filter for category at all and return 
 			 * ALL the cards in the deck.
 			*/
-			current_study_options.category = (selected == 0) ? "" : category_choices[selected];
+			current_study_options.category = category_choices[selected] == "All" ? "" : category_choices[selected];
 
 			auto category_win = window(
 				text("Categories"),
@@ -509,28 +542,22 @@ namespace pages
 
 			auto question_window = window(
 				text("Question"),
-				hbox({
-					filler(),
-					paragraphAlignLeft(cur_card.question) | size(ftxui::WIDTH, ftxui::EQUAL, 40),
-					filler(),
-				})
+				paragraphAlignLeft(cur_card.question)
 			);
 
 			auto answer_window = window(
 				text("Answer"),
-				hbox({
-					filler(),
-					paragraphAlignLeft(answer_text) | size(ftxui::WIDTH, ftxui::EQUAL, 40),
-					filler(),
-				})
+				paragraphAlignLeft(answer_text)
 			);
 
 			return vbox({
-				hbox({ 		// TODO: question/answer panels
-					question_window,
+				// hbox({ 		// TODO: question/answer panels
+				// }) | size(HEIGHT, EQUAL, 40),
+				vbox({
+					question_window | size(HEIGHT, EQUAL, 15),
 					separator(),
-					answer_window | size(WIDTH, GREATER_THAN, 30),
-				}) | size(HEIGHT, EQUAL, 40),
+					answer_window | size(HEIGHT, EQUAL, 15),
+				}),
 				gauge(progress),
 				separator(),
 				gui_custom::BottomLearningHelpText(current_study_options.deck_name),
