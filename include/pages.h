@@ -224,19 +224,6 @@ namespace pages
 			})
 		);
 
-		// allow to auto fill in existing category in selected deck
-		// for showing
-        std::vector<std::string> relevant_categories = {};
-		std::string categories_text = "";
-		Elements categories_spaced;
-		auto categories_refresh = [&] {
-			relevant_categories = db::GetCategories(deck_name_content);
-			categories_spaced = {};
-			for (auto c : relevant_categories)
-				categories_spaced.push_back(text("- " + c));
-		};
-		categories_refresh();
-
 		// setting up refreshing preview flashcards when deck name or paging changes
 		std::vector<db::FlashCard> relevant_flashcards = {};
 		Elements flashcards_spaced;
@@ -248,6 +235,7 @@ namespace pages
 			flashcards_spaced = {};
 			if (relevant_flashcards.size() == 0) {
 				flashcards_spaced.push_back(text("No flash cards found with this deck name and category."));
+				preview_start_index, preview_up_to = 0;
 			} else {
 				preview_up_to = (preview_up_to == 0) ? std::min(page_size, (int)relevant_flashcards.size()-1) : preview_up_to;
 				for (int i = preview_start_index; i <= preview_up_to; i++) {
@@ -260,6 +248,22 @@ namespace pages
 				}
 			}
 		};
+
+		// allow to auto fill in existing category in selected deck
+		// for showing
+        std::vector<std::string> relevant_categories = {};
+		std::string categories_text = "";
+		Elements categories_spaced;
+		auto categories_refresh = [&] {
+			relevant_categories = db::GetCategories(deck_name_content);
+			categories_spaced = {};
+			for (auto c : relevant_categories)
+				categories_spaced.push_back(text("- " + c));
+			
+			// reset flashcard preview from any previous browsing
+			flashcards_refresh();
+		};
+		categories_refresh();
 
 		Component deck_name_input = Input(&deck_name_content, "Deck name");
         Component question_input = Input(&question_content, "Question");
