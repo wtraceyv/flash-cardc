@@ -43,7 +43,7 @@ namespace pages
 	/** Page rendering functions below */
 
 	/**
-	 * A dummy to make sure thread stuff does not prevent
+	 * A dummy to make sure framework stuff does not prevent
 	 * exiting when desired. If you set this as 
 	 * next page, it should quit and dump like you want
 	 * no matter what.
@@ -58,8 +58,6 @@ namespace pages
 	 * - Browse decks to practice
 	 * - Start new deck
 	 * - Options
-	 * - Import
-	 * - Export
 	*/
 	inline void HomePage()
 	{
@@ -138,6 +136,9 @@ namespace pages
 		screen.Loop(doc);
 	}
 
+	/**
+	 * Browse and choose a flash card deck to practice.
+	*/
 	inline void BrowseDecksPage()
 	{
 		auto screen = ScreenInteractive::Fullscreen();
@@ -150,14 +151,8 @@ namespace pages
 			&selected
 		);
 
-		// auto buttons = Container::Horizontal({
-		// 	exit_button,
-		// 	go_button
-		// });
-
 		auto all_components = Container::Vertical({
 			main_menu,
-			// buttons
 		});
 
 		std::string message = "";
@@ -217,7 +212,7 @@ namespace pages
         std::string answer_content = "";
         std::string category_content = "";
 
-		// allow to auto fill in deck name with an existing deck to add to it
+		// Display existing decks in case you want to type it in and add to existing one
         std::vector<std::string> existing_decks = db::GetDecks();
 		Elements decks_spaced;
 		for (auto d : existing_decks)
@@ -242,6 +237,7 @@ namespace pages
 		};
 		categories_refresh();
 
+		// setting up refreshing preview flashcards when deck name or paging changes
 		std::vector<db::FlashCard> relevant_flashcards = {};
 		Elements flashcards_spaced;
 		const int page_size = 22;
@@ -302,6 +298,7 @@ namespace pages
 			ButtonOption::Animated(Color::MediumOrchid1)
 		);
 
+		// page back previewed flash cards
 		auto page_back_button = Button(
 			"Previous cards",
 			[&] {
@@ -317,6 +314,7 @@ namespace pages
 			ButtonOption::Animated(Color::MediumOrchid1)
 		);
 
+		// page forward previewed flash cards
 		auto page_forward_button = Button(
 			"More cards",
 			[&] {
@@ -330,7 +328,6 @@ namespace pages
 			ButtonOption::Animated(Color::MediumOrchid1)
 		);
 
-        // on submit, clear only question, answer, category, NOT deck selection
         auto all_components = Container::Horizontal({
 			Container::Vertical({
 				deck_name_input,
@@ -361,6 +358,7 @@ namespace pages
 					text(""),
 					text(""),
 					hbox({
+						// left-side text input area
 						vbox({
 							deck_name_input->Render() | size(WIDTH, EQUAL, 40),
 							question_input->Render() | size(WIDTH, LESS_THAN, 40),
@@ -374,7 +372,7 @@ namespace pages
 							text(message),
 							text(""),
 						}) | flex,
-						// filler(),
+						// right-side reference info for existing cards/categories in decks
 						vbox({
 							deck_display,
 							text(""),
@@ -440,7 +438,6 @@ namespace pages
 		auto go_button = Button(
 			"Start practicing",
 			[&] {
-				// TODO: change to LearnPage when implemented
 				next_page = LearnPage;
 				screen.Exit();
 			},
@@ -454,8 +451,6 @@ namespace pages
 			go_button
 		});
 
-		// TODO: scrollable card preview to take up rest of space below?
-
 		std::string message = "";
 
 		auto doc = Renderer(all_components, [&]
@@ -467,7 +462,7 @@ namespace pages
 			current_study_options.answer_first = study_bool_flags[1];
 			current_study_options.loop_forever = study_bool_flags[2];
 			/**
-			 * If first option selected, "All", only give empty str for category.
+			 * If category "All" selected, only give empty str for category.
 			 * In the db call, it won't filter for category at all and return 
 			 * ALL the cards in the deck.
 			*/
@@ -483,6 +478,7 @@ namespace pages
 				})
 			);
 
+			// layout for "options" checkboxes
 			auto flags_win = window(
 				text("Extra"),
 				vbox({
@@ -493,6 +489,7 @@ namespace pages
 				})
 			);
 
+			// final layout
 			return vbox({
 				vbox({
 					hbox({
@@ -523,6 +520,10 @@ namespace pages
 		screen.Loop(doc);
 	}
 
+	/**
+	 * Main page while practicing a deck. Preloaded with all relevant cards 
+	 * based on chosen options, all keyboard-driven until exit.
+	*/
 	inline void LearnPage()
 	{
 		auto screen = ScreenInteractive::Fullscreen();
@@ -551,8 +552,6 @@ namespace pages
 			);
 
 			return vbox({
-				// hbox({ 		// TODO: question/answer panels
-				// }) | size(HEIGHT, EQUAL, 40),
 				vbox({
 					question_window | size(HEIGHT, EQUAL, 15),
 					separator(),
@@ -567,22 +566,22 @@ namespace pages
 
 		doc |= CatchEvent([&](Event event) {
 			if (event == Event::Character('\n')) {
-				if (!show_answer) { 			// show the hidden answer
+				if (!show_answer) { // show the hidden answer
 					show_answer = true;
 					num_answered++;
 					return true;
-				} else { 									// answer is already showing
-					if (cur_q_index < questions.size()-1) { 	// more questions are left, show next one
+				} else { // answer is already showing
+					if (cur_q_index < questions.size()-1) { // more questions are left, show next one
 						cur_q_index++;
 						cur_card = questions[cur_q_index];
-					} else {								// no questions left, either regen or exit
+					} else {								// no questions left, either loop around or exit
 						if (current_study_options.loop_forever) {
 							// deck exhausted, loop back and continue
 							num_answered = 0;
 							cur_q_index = 0;
 							cur_card = questions[cur_q_index];
 						} else {
-							// exit, deck exhausted
+							// deck exhausted, exit
 							next_page = PreLearnPage;
 							screen.Exit();
 							return true;
