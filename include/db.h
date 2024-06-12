@@ -80,13 +80,43 @@ namespace db
 		)";
 		std::string sql = std::format(sql_raw, new_card.deck_name, new_card.question, new_card.answer, new_card.category, new_card.next_study_rec);
 
-		sqlite3_open(db_filepath, &db);
 		int err = sqlite3_open(db_filepath, &db);
 		err = sqlite3_exec(db, sql.c_str(), NULL, 0, &err_message);
 
 		if (err != SQLITE_OK) {
 			// TODO: have to hook this up to fxtui to display somewhere (message thing at bottom of page probably)
 			printf("SQL: Error inserting flash card: %s", err_message);
+			sqlite3_free(err_message);
+		}
+
+		sqlite3_close(db);
+	}
+
+	/**
+	 * Function assumes the id key of the card is unmodified, so 
+	 * I can identify the card to be updated using it.
+	*/
+	inline void UpdateCard(FlashCard updated_card)
+	{
+		sqlite3* db;
+		char* err_message;
+
+		constexpr std::string_view sql_raw = R"(
+			UPDATE flash_cards
+			SET
+				question = '{}',
+				answer = '{}'
+			WHERE id = {}
+		)";
+		std::string sql = std::format(sql_raw, updated_card.question, updated_card.answer, updated_card.id);
+
+		printf("%s\n", sql);
+
+		int err = sqlite3_open(db_filepath, &db);
+		err = sqlite3_exec(db, sql.c_str(), NULL, 0, &err_message);
+
+		if (err != SQLITE_OK) {
+			printf("SQL: Error updating flash card: %s", err_message);
 			sqlite3_free(err_message);
 		}
 

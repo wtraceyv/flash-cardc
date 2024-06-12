@@ -432,6 +432,8 @@ namespace pages
 	{
 		auto screen = ScreenInteractive::Fullscreen();
 
+		std::string message = "";
+
 		std::vector<db::FlashCard> cards = db::GetCards(current_study_options.deck_name, current_study_options.category);
 		int card_index = 0;
 		std::string question_content = cards[card_index].question;
@@ -442,6 +444,7 @@ namespace pages
 		auto refresh_card = [&] {
 			question_content = cards[card_index].question;
 			answer_content = cards[card_index].answer;
+			message = "";
 		};
 		refresh_card();
 
@@ -476,7 +479,14 @@ namespace pages
 		auto submit_button = Button(
 			"Save changes to this card",
 			[&] {
-				// TODO:
+				db::FlashCard edited = cards[card_index];
+				edited.question = question_content;
+				edited.answer = answer_content;
+				db::UpdateCard(edited);
+				message = "Updated this card!";
+
+				// refresh cards so the change is reflected even if you page away and back to this card
+				cards = db::GetCards(current_study_options.deck_name, current_study_options.category);
 			},
 			ButtonOption::Animated(Color::Aquamarine1)
 		);
@@ -526,6 +536,7 @@ namespace pages
 					text("  Answer: "),
 					answer_textarea->Render(),
 				}),
+				text(message),
 				separator(),
 				hbox({
 					prev_card_button->Render(),
