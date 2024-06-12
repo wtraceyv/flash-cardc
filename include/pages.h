@@ -20,7 +20,8 @@ namespace pages
 
 	void HomePage();
 	void BrowseDecksPage();
-    void InsertCards();
+    void InsertCardsPage();
+	void EditCardsPage();
 	void SettingsPage();
 	void PreLearnPage();
 	void LearnPage();
@@ -65,8 +66,9 @@ namespace pages
 
 		const std::vector<std::string> menu_choices = {
 			"Browse Decks",
-			"New Cards or Deck",
+			"New Cards/Deck or Edit Cards",
 			"Options",
+			"Quit"
 		};
 		int selected = 0;
 		auto main_menu = Menu(
@@ -90,12 +92,16 @@ namespace pages
 					message = "Time to learn!";
 					break;
 				case 1:
-					next_page = InsertCards;
+					next_page = InsertCardsPage;
 					message = "New set of cards ahead.";
 					break;
 				case 2:
 					next_page = SettingsPage;
 					message = "Change settings about flash cards.";
+					break;
+				case 3:
+					next_page = QuitPage;
+					message = "Leave, never to study!";
 					break;
 				default:
 					message = "Sup.";
@@ -203,7 +209,7 @@ namespace pages
 	/**
 	 * Insert new flash cards as part of a new or existing deck.
 	*/
-    inline void InsertCards()
+    inline void InsertCardsPage()
     {
         auto screen = ScreenInteractive::Fullscreen();
 
@@ -293,6 +299,18 @@ namespace pages
 			ButtonOption::Animated(Color::Aquamarine1)
 		);
 
+		auto edit_button = Button(
+			"Edit these cards",
+			[&] {
+				// set current deck/category so edit page can filter with that
+				current_study_options.deck_name = deck_name_content;
+				current_study_options.category = category_content;
+				next_page = EditCardsPage;
+				screen.Exit();
+			},
+			ButtonOption::Animated(Color::Aquamarine1)
+		);
+
 		auto leave_button = Button(
 			"Return home",
 			[&] {
@@ -339,6 +357,7 @@ namespace pages
 				answer_input,
 				category_input,
 				submit_button,
+				edit_button,
 				leave_button
 			}),
 			page_back_button,
@@ -370,6 +389,8 @@ namespace pages
 							category_input->Render() | size(WIDTH, EQUAL, 40),
 							text(""),
 							submit_button->Render() | size(WIDTH, LESS_THAN, 18),
+							text(""),
+							edit_button->Render() | size(WIDTH, LESS_THAN, 18),
 							text(""),
 							leave_button->Render() | size(WIDTH, LESS_THAN, 18),
 							text(""),
@@ -406,6 +427,118 @@ namespace pages
 
 		screen.Loop(doc);
     }
+
+	inline void EditCardsPage()
+	{
+		auto screen = ScreenInteractive::Fullscreen();
+
+		std::vector<db::FlashCard> cards = db::GetCards(current_study_options.deck_name, current_study_options.category);
+		int card_index = 0;
+		std::string question_content = cards[card_index].question;
+		auto question_textarea = Input(&question_content, "Question Content");
+		std::string answer_content = cards[card_index].answer;
+		auto answer_textarea = Input(&answer_content, "Answer Content");
+
+		auto refresh_card = [&] {
+			question_content = cards[card_index].question;
+			answer_content = cards[card_index].answer;
+		};
+		refresh_card();
+
+		auto question_win = window(
+			text("Question"),
+			question_textarea->Render()
+		);
+
+		auto answer_win = window(
+			text("Answer"),
+			answer_textarea->Render()
+		);
+
+		auto next_card_button = Button(
+			"Next Card",
+			[&] {
+				card_index = (card_index + 1 >= cards.size()) ? card_index : card_index + 1;
+				refresh_card();
+			},
+			ButtonOption::Animated(Color::Aquamarine1)
+		);
+
+		auto prev_card_button = Button(
+			"Previous Card",
+			[&] {
+				card_index = (card_index - 1 < 0) ? card_index : card_index - 1;
+				refresh_card();
+			},
+			ButtonOption::Animated(Color::Aquamarine1)
+		);
+
+		auto submit_button = Button(
+			"Save changes to this card",
+			[&] {
+				// TODO:
+			},
+			ButtonOption::Animated(Color::Aquamarine1)
+		);
+
+		auto leave_button = Button(
+			"Back to previous page",
+			[&] {
+				next_page = InsertCardsPage;
+				screen.Exit();
+			},
+			ButtonOption::Animated(Color::Aquamarine1)
+		);
+
+		auto quit_button = Button(
+			"Quit",
+			[&] {
+				next_page = QuitPage;
+				screen.Exit();
+			},
+			ButtonOption::Animated(Color::Aquamarine1)
+		);
+
+		auto all_components = Container::Vertical({
+			question_textarea,
+			answer_textarea,
+			Container::Horizontal({
+				prev_card_button,
+				next_card_button
+			}),
+			submit_button,
+			leave_button,
+			quit_button
+		});
+
+		auto doc = Renderer(all_components, [&] {
+			return vbox({
+				text("Loaded cards. Deck: \"" + current_study_options.deck_name + "\", category: \"" + current_study_options.category + "\""),
+				paragraphAlignLeft("Page through existing cards, edit and save questions and answers as needed."),
+				text(""),
+				text(""),
+				separator(),
+				hbox({
+					text("Question: "),
+					question_textarea->Render(),
+				}),
+				hbox({
+					text("  Answer: "),
+					answer_textarea->Render(),
+				}),
+				separator(),
+				hbox({
+					prev_card_button->Render(),
+					next_card_button->Render(),
+				}),
+				submit_button->Render(),
+				leave_button->Render(),
+				quit_button->Render(),
+			});
+		});
+
+		screen.Loop(doc);
+	}
 
 	/**
 	 * Set options about studying the set with a learn_engine::StudyOptions struct.
